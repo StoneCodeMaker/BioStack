@@ -1,0 +1,214 @@
+@page "/"
+@inject BioStackDbContext DbContext
+
+<PageTitle>BioStack - Dashboard</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Dashboard</MudText>
+
+<MudGrid>
+    <!-- Health Metrics Summary Card -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Today's Health Metrics</MudText>
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
+                              InputData="@_energyData" InputLabels="@_energyLabels">
+                        <CustomGraphics>
+                            <MudText Typo="Typo.h5" Align="Align.Center">Energy</MudText>
+                            <MudText Typo="Typo.body1" Align="Align.Center">@_todayMetrics?.EnergyLevel/10</MudText>
+                        </CustomGraphics>
+                    </MudChart>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
+                              InputData="@_sleepData" InputLabels="@_sleepLabels">
+                        <CustomGraphics>
+                            <MudText Typo="Typo.h5" Align="Align.Center">Sleep</MudText>
+                            <MudText Typo="Typo.body1" Align="Align.Center">@_todayMetrics?.SleepQuality/10</MudText>
+                        </CustomGraphics>
+                    </MudChart>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Supplement Adherence Card -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Today's Supplements</MudText>
+            <MudProgressLinear Color="Color.Success" Value="@_supplementAdherence" Class="my-4">
+                <MudText Typo="Typo.body2">@_supplementAdherence.ToString("0")%</MudText>
+            </MudProgressLinear>
+            <MudList Dense="true">
+                @foreach (var intake in _todayIntakes)
+                {
+                    <MudListItem>
+                        <div class="d-flex align-center">
+                            @if (intake.Taken)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.RadioButtonUnchecked" Color="Color.Default" Class="mr-2" />
+                            }
+                            <div>
+                                <MudText Typo="Typo.body1">@intake.Supplement?.Name</MudText>
+                                <MudText Typo="Typo.caption">@intake.Supplement?.Dosage</MudText>
+                            </div>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Weekly Activity Chart -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Weekly Activity</MudText>
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@_weeklySeries" XAxisLabels="@_weeklyLabels" Width="100%" Height="300px"></MudChart>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Recent Workouts -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Recent Workouts</MudText>
+            @if (_recentWorkouts.Any())
+            {
+                <MudList Dense="true">
+                    @foreach (var workout in _recentWorkouts)
+                    {
+                        <MudListItem>
+                            <div class="d-flex">
+                                <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Class="mr-3" />
+                                <div>
+                                    <MudText Typo="Typo.body1">@workout.Name</MudText>
+                                    <MudText Typo="Typo.caption">@workout.Date.ToString("MMM dd") - @workout.DurationMinutes min</MudText>
+                                </div>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+            else
+            {
+                <MudText>No recent workouts found.</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Quick Actions -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Quick Actions</MudText>
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" StartIcon="@Icons.Material.Filled.AddCircle" Href="supplements">Add Supplement</MudButton>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" StartIcon="@Icons.Material.Filled.FitnessCenter" Href="workouts">Log Workout</MudButton>
+                </MudItem>
+                <MudItem xs="12" Class="mt-2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" StartIcon="@Icons.Material.Filled.Insights" Href="reports">View Reports</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private HealthMetric? _todayMetrics;
+    private List<IntakeLog> _todayIntakes = new();
+    private List<Workout> _recentWorkouts = new();
+    private double _supplementAdherence = 0;
+
+    // Chart data
+    private double[] _energyData = { 0, 10 };
+    private string[] _energyLabels = { "Energy", "" };
+    private double[] _sleepData = { 0, 10 };
+    private string[] _sleepLabels = { "Sleep", "" };
+
+    private List<ChartSeries> _weeklySeries = new();
+    private string[] _weeklyLabels = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardDataAsync();
+    }
+
+    private async Task LoadDashboardDataAsync()
+    {
+        var today = DateTime.Today;
+
+        // Get today's health metrics
+        _todayMetrics = await DbContext.HealthMetrics
+            .OrderByDescending(hm => hm.Date)
+            .FirstOrDefaultAsync();
+
+        if (_todayMetrics != null)
+        {
+            // Update energy chart
+            if (_todayMetrics.EnergyLevel.HasValue)
+            {
+                _energyData = new double[] { _todayMetrics.EnergyLevel.Value, 10 - _todayMetrics.EnergyLevel.Value };
+            }
+
+            // Update sleep chart
+            if (_todayMetrics.SleepQuality.HasValue)
+            {
+                _sleepData = new double[] { _todayMetrics.SleepQuality.Value, 10 - _todayMetrics.SleepQuality.Value };
+            }
+        }
+
+        // Get today's supplement intakes
+        _todayIntakes = await DbContext.IntakeLogs
+            .Include(il => il.Supplement)
+            .Where(il => il.IntakeTime.Date == today)
+            .ToListAsync();
+
+        // Calculate supplement adherence
+        if (_todayIntakes.Any())
+        {
+            _supplementAdherence = (double)_todayIntakes.Count(i => i.Taken) / _todayIntakes.Count * 100;
+        }
+
+        // Get recent workouts
+        _recentWorkouts = await DbContext.Workouts
+            .OrderByDescending(w => w.Date)
+            .Take(5)
+            .ToListAsync();
+
+        // Set up weekly activity chart
+        var pastWeek = Enumerable.Range(0, 7)
+            .Select(i => today.AddDays(-i))
+            .Reverse()
+            .ToList();
+
+        var workoutData = new List<double>();
+        var supplementData = new List<double>();
+
+        foreach (var date in pastWeek)
+        {
+            // Count workouts for this day
+            var workoutCount = await DbContext.Workouts
+                .CountAsync(w => w.Date.Date == date.Date);
+            workoutData.Add(workoutCount);
+
+            // Count supplements taken for this day
+            var supplementCount = await DbContext.IntakeLogs
+                .CountAsync(il => il.IntakeTime.Date == date.Date && il.Taken);
+            supplementData.Add(supplementCount);
+        }
+
+        _weeklySeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Workouts", Data = workoutData.ToArray() },
+            new ChartSeries { Name = "Supplements Taken", Data = supplementData.ToArray() }
+        };
+
+        _weeklyLabels = pastWeek.Select(d => d.ToString("ddd")).ToArray();
+    }
+}

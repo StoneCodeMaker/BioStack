@@ -1,0 +1,275 @@
+@page "/reports"
+@inject BioStackDbContext DbContext
+
+<PageTitle>BioStack - Reports</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Reports</MudText>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Date Range</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="5" md="4">
+                    <MudDateRangePicker DateRange="_dateRange" Label="Date Range" AutoClose="true" />
+                </MudItem>
+                <MudItem xs="12" sm="7" md="8">
+                    <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                        <MudButton OnClick="@(() => SetDateRange(7))">Last 7 Days</MudButton>
+                        <MudButton OnClick="@(() => SetDateRange(14))">Last 14 Days</MudButton>
+                        <MudButton OnClick="@(() => SetDateRange(30))">Last 30 Days</MudButton>
+                    </MudButtonGroup>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Supplement Adherence Report -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Supplement Adherence</MudText>
+            @if (_loading)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Donut" Width="300px" Height="300px"
+                          InputData="@_supplementAdherenceData" InputLabels="@_supplementAdherenceLabels">
+                    <CustomGraphics>
+                        <MudText Typo="Typo.h5" Align="Align.Center">@_supplementAdherencePercentage.ToString("0")+"%</MudText>
+                        <MudText Typo="Typo.body2" Align="Align.Center">Adherence</MudText>
+                    </CustomGraphics>
+                </MudChart>
+
+                <MudTable Items="@_supplementAdherenceByType" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Category</MudTh>
+                        <MudTh>Adherence</MudTh>
+                        <MudTh>Taken/Total</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Category">@context.Category</MudTd>
+                        <MudTd DataLabel="Adherence">
+                            <MudProgressLinear Color="@GetAdherenceColor(context.Percentage)" Value="@context.Percentage" Class="my-0">
+                                <MudText Typo="Typo.caption">@context.Percentage.ToString("0")+"%</MudText>
+                            </MudProgressLinear>
+                        </MudTd>
+                        <MudTd DataLabel="Taken/Total">@context.Taken/@context.Total</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Workout Volume Report -->
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Workout Volume</MudText>
+            @if (_loading)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Bar" ChartSeries="@_workoutSeries" XAxisLabels="@_workoutLabels" Width="100%" Height="300px" />
+
+                <MudDivider Class="my-4" />
+
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.subtitle1">Total Workouts</MudText>
+                        <MudText Typo="Typo.h5">@_totalWorkouts</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.subtitle1">Total Duration</MudText>
+                        <MudText Typo="Typo.h5">@_totalDuration min</MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Health Metrics Trends -->
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Health Metrics Trends</MudText>
+            @if (_loading)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Line" ChartSeries="@_healthSeries" XAxisLabels="@_healthLabels" Width="100%" Height="350px" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private DateRange _dateRange = new DateRange(DateTime.Now.AddDays(-7), DateTime.Now);
+    private bool _loading = true;
+
+    // Supplement adherence data
+    private double[] _supplementAdherenceData = new double[] { 0, 0 };
+    private string[] _supplementAdherenceLabels = new string[] { "Taken", "Missed" };
+    private double _supplementAdherencePercentage = 0;
+    private List<SupplementAdherenceByCategory> _supplementAdherenceByType = new();
+
+    // Workout volume data
+    private List<ChartSeries> _workoutSeries = new();
+    private string[] _workoutLabels = Array.Empty<string>();
+    private int _totalWorkouts = 0;
+    private int _totalDuration = 0;
+
+    // Health metrics data
+    private List<ChartSeries> _healthSeries = new();
+    private string[] _healthLabels = Array.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReportDataAsync();
+    }
+
+    private async Task LoadReportDataAsync()
+    {
+        _loading = true;
+        await Task.Delay(300); // Simulate loading
+
+        await LoadSupplementAdherenceAsync();
+        await LoadWorkoutVolumeAsync();
+        await LoadHealthMetricsAsync();
+
+        _loading = false;
+    }
+
+    private async Task LoadSupplementAdherenceAsync()
+    {
+        // Get all intake logs within the date range
+        var intakeLogs = await DbContext.IntakeLogs
+            .Include(il => il.Supplement)
+            .Where(il => il.IntakeTime.Date >= _dateRange.Start!.Value.Date && il.IntakeTime.Date <= _dateRange.End!.Value.Date)
+            .ToListAsync();
+
+        // Calculate overall adherence
+        int totalIntakes = intakeLogs.Count;
+        int takenIntakes = intakeLogs.Count(il => il.Taken);
+
+        if (totalIntakes > 0)
+        {
+            _supplementAdherencePercentage = (double)takenIntakes / totalIntakes * 100;
+            _supplementAdherenceData = new double[] { takenIntakes, totalIntakes - takenIntakes };
+        }
+        else
+        {
+            _supplementAdherencePercentage = 0;
+            _supplementAdherenceData = new double[] { 0, 1 }; // Avoid empty chart
+        }
+
+        // Calculate adherence by category
+        _supplementAdherenceByType = intakeLogs
+            .GroupBy(il => il.Supplement?.Category ?? "Unknown")
+            .Select(g => new SupplementAdherenceByCategory
+            {
+                Category = g.Key,
+                Total = g.Count(),
+                Taken = g.Count(il => il.Taken),
+                Percentage = g.Any() ? (double)g.Count(il => il.Taken) / g.Count() * 100 : 0
+            })
+            .OrderByDescending(s => s.Percentage)
+            .ToList();
+    }
+
+    private async Task LoadWorkoutVolumeAsync()
+    {
+        // Get all workouts within the date range
+        var workouts = await DbContext.Workouts
+            .Where(w => w.Date.Date >= _dateRange.Start!.Value.Date && w.Date.Date <= _dateRange.End!.Value.Date)
+            .ToListAsync();
+
+        // Get all exercise sets for these workouts
+        var workoutIds = workouts.Select(w => w.Id).ToList();
+        var exerciseSets = await DbContext.ExerciseSets
+            .Where(es => workoutIds.Contains(es.WorkoutId))
+            .ToListAsync();
+
+        // Calculate totals
+        _totalWorkouts = workouts.Count;
+        _totalDuration = workouts.Sum(w => w.DurationMinutes);
+
+        // Group workouts by type
+        var workoutsByType = workouts
+            .GroupBy(w => w.WorkoutType ?? "Other")
+            .Select(g => new { Type = g.Key, Count = g.Count(), Duration = g.Sum(w => w.DurationMinutes) })
+            .OrderByDescending(g => g.Count)
+            .ToList();
+
+        // Prepare chart data
+        _workoutLabels = workoutsByType.Select(w => w.Type).ToArray();
+        _workoutSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Workouts", Data = workoutsByType.Select(w => (double)w.Count).ToArray() },
+            new ChartSeries { Name = "Duration (min)", Data = workoutsByType.Select(w => (double)w.Duration).ToArray() }
+        };
+    }
+
+    private async Task LoadHealthMetricsAsync()
+    {
+        // Get all health metrics within the date range
+        var healthMetrics = await DbContext.HealthMetrics
+            .Where(hm => hm.Date.Date >= _dateRange.Start!.Value.Date && hm.Date.Date <= _dateRange.End!.Value.Date)
+            .OrderBy(hm => hm.Date)
+            .ToListAsync();
+
+        if (healthMetrics.Any())
+        {
+            // Prepare labels (dates)
+            _healthLabels = healthMetrics.Select(hm => hm.Date.ToString("MMM dd")).ToArray();
+
+            // Prepare series data
+            var energyData = healthMetrics.Select(hm => (double?)hm.EnergyLevel ?? 0).ToArray();
+            var sleepQualityData = healthMetrics.Select(hm => (double?)hm.SleepQuality ?? 0).ToArray();
+            var recoveryData = healthMetrics.Select(hm => (double?)hm.RecoveryScore ?? 0).ToArray();
+
+            _healthSeries = new List<ChartSeries>
+            {
+                new ChartSeries { Name = "Energy", Data = energyData },
+                new ChartSeries { Name = "Sleep Quality", Data = sleepQualityData },
+                new ChartSeries { Name = "Recovery", Data = recoveryData }
+            };
+        }
+        else
+        {
+            // No data
+            _healthLabels = new[] { "No Data" };
+            _healthSeries = new List<ChartSeries>
+            {
+                new ChartSeries { Name = "Energy", Data = new double[] { 0 } },
+                new ChartSeries { Name = "Sleep Quality", Data = new double[] { 0 } },
+                new ChartSeries { Name = "Recovery", Data = new double[] { 0 } }
+            };
+        }
+    }
+
+    private async Task SetDateRange(int days)
+    {
+        _dateRange = new DateRange(DateTime.Now.AddDays(-days), DateTime.Now);
+        await LoadReportDataAsync();
+    }
+
+    private Color GetAdherenceColor(double percentage)
+    {
+        if (percentage >= 80) return Color.Success;
+        if (percentage >= 60) return Color.Info;
+        if (percentage >= 40) return Color.Warning;
+        return Color.Error;
+    }
+
+    private class SupplementAdherenceByCategory
+    {
+        public string Category { get; set; } = "";
+        public int Total { get; set; }
+        public int Taken { get; set; }
+        public double Percentage { get; set; }
+    }
+}

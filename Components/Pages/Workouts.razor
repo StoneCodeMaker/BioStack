@@ -1,0 +1,322 @@
+@page "/workouts"
+@inject BioStackDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>BioStack - Workouts</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Workouts</MudText>
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+    <MudTabPanel Text="Workout Log">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Elevation="3">
+                    <MudText Typo="Typo.h5" Class="mb-4">Log Workout</MudText>
+                    <MudForm @ref="_workoutForm" Model="@_newWorkout" @bind-IsValid="@_isWorkoutValid">
+                        <MudTextField @bind-Value="_newWorkout.Name" Label="Workout Name" Required="true" RequiredError="Name is required!" />
+                        <MudDatePicker Date="_newWorkout.Date" DateChanged="(DateTime? date) => _newWorkout.Date = date ?? DateTime.Today" Label="Date" Required="true" RequiredError="Date is required!" />
+                        <MudSelect @bind-Value="_newWorkout.WorkoutType" Label="Workout Type">
+                            @foreach (var type in _workoutTypes)
+                            {
+                                <MudSelectItem Value="@type">@type</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudNumericField @bind-Value="_newWorkout.DurationMinutes" Label="Duration (minutes)" Min="1" Max="300" />
+                        <MudTextField @bind-Value="_newWorkout.Notes" Label="Notes" Lines="3" />
+                        <div class="d-flex justify-space-between mt-4">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isWorkoutValid)" OnClick="@SaveWorkout">
+                                @if (_isEditingWorkout)
+                                {
+                                    <span>Update</span>
+                                }
+                                else
+                                {
+                                    <span>Save</span>
+                                }
+                            </MudButton>
+                            @if (_isEditingWorkout)
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@CancelEditWorkout">Cancel</MudButton>
+                            }
+                        </div>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="8">
+                <MudPaper Class="pa-4" Elevation="3">
+                    <MudText Typo="Typo.h5" Class="mb-4">Recent Workouts</MudText>
+                    <MudTable Items="@_workouts" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Primary">
+                        <ToolBarContent>
+                            <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Type</MudTh>
+                            <MudTh>Duration</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Date">@context.Date.ToString("MMM dd, yyyy")</MudTd>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Type">@context.WorkoutType</MudTd>
+                            <MudTd DataLabel="Duration">@context.DurationMinutes min</MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditWorkout(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => DeleteWorkout(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.FitnessCenter" Size="Size.Small" OnClick="@(() => ViewExercises(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+
+    <MudTabPanel Text="Exercise Sets">
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4" Elevation="3">
+                    <MudText Typo="Typo.h5" Class="mb-4">Log Exercise Set</MudText>
+                    @if (_selectedWorkout != null)
+                    {
+                        <MudText Typo="Typo.body1" Class="mb-4">
+                            <strong>Workout:</strong> @_selectedWorkout.Name (@_selectedWorkout.Date.ToString("MMM dd"))
+                        </MudText>
+                        <MudForm @ref="_exerciseForm" Model="@_newExerciseSet" @bind-IsValid="@_isExerciseValid">
+                            <MudTextField @bind-Value="_newExerciseSet.ExerciseName" Label="Exercise Name" Required="true" RequiredError="Exercise name is required!" />
+                            <MudNumericField @bind-Value="_newExerciseSet.SetNumber" Label="Set Number" Min="1" Max="20" Required="true" RequiredError="Set number is required!" />
+                            <MudNumericField @bind-Value="_newExerciseSet.Reps" Label="Reps" Min="1" Max="100" Required="true" RequiredError="Reps are required!" />
+                            <MudNumericField @bind-Value="_newExerciseSet.Weight" Label="Weight" Min="0" Max="1000" Required="true" RequiredError="Weight is required!" />
+                            <MudTextField @bind-Value="_newExerciseSet.WeightUnit" Label="Weight Unit" Required="true" RequiredError="Weight unit is required!" />
+                            <MudTextField @bind-Value="_newExerciseSet.Notes" Label="Notes" />
+                            <div class="d-flex justify-space-between mt-4">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isExerciseValid)" OnClick="@SaveExerciseSet">
+                                    @if (_isEditingExercise)
+                                    {
+                                        <span>Update</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Save</span>
+                                    }
+                                </MudButton>
+                                @if (_isEditingExercise)
+                                {
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@CancelEditExercise">Cancel</MudButton>
+                                }
+                            </div>
+                        </MudForm>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">Please select a workout first to add exercise sets.</MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="8">
+                <MudPaper Class="pa-4" Elevation="3">
+                    <MudText Typo="Typo.h5" Class="mb-4">Exercise Sets</MudText>
+                    @if (_selectedWorkout != null)
+                    {
+                        <MudTable Items="@_exerciseSets" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loadingExercises" LoadingProgressColor="Color.Primary">
+                            <HeaderContent>
+                                <MudTh>Exercise</MudTh>
+                                <MudTh>Set</MudTh>
+                                <MudTh>Reps</MudTh>
+                                <MudTh>Weight</MudTh>
+                                <MudTh>Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Exercise">@context.ExerciseName</MudTd>
+                                <MudTd DataLabel="Set">@context.SetNumber</MudTd>
+                                <MudTd DataLabel="Reps">@context.Reps</MudTd>
+                                <MudTd DataLabel="Weight">@context.Weight @context.WeightUnit</MudTd>
+                                <MudTd DataLabel="Actions">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditExerciseSet(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => DeleteExerciseSet(context))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info">Select a workout to view exercise sets.</MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    // Workout properties
+    private List<Workout> _workouts = new();
+    private Workout _newWorkout = new() { Date = DateTime.Today };
+    private bool _isWorkoutValid;
+    private bool _isEditingWorkout = false;
+    private MudForm? _workoutForm;
+    private string _searchString = "";
+    private bool _loading = true;
+
+    // Exercise set properties
+    private List<ExerciseSet> _exerciseSets = new();
+    private ExerciseSet _newExerciseSet = new() { WeightUnit = "lbs" };
+    private bool _isExerciseValid;
+    private bool _isEditingExercise = false;
+    private MudForm? _exerciseForm;
+    private Workout? _selectedWorkout;
+    private bool _loadingExercises = false;
+
+    private List<string> _workoutTypes = new List<string>
+    {
+        "Strength",
+        "Cardio",
+        "HIIT",
+        "Flexibility",
+        "Recovery",
+        "Calisthenics",
+        "CrossFit",
+        "Other"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWorkoutsAsync();
+    }
+
+    private async Task LoadWorkoutsAsync()
+    {
+        _loading = true;
+        _workouts = await DbContext.Workouts
+            .OrderByDescending(w => w.Date)
+            .ToListAsync();
+        _loading = false;
+    }
+
+    private async Task SaveWorkout()
+    {
+        if (_isEditingWorkout)
+        {
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Workout updated successfully!", Severity.Success);
+            _isEditingWorkout = false;
+        }
+        else
+        {
+            await DbContext.Workouts.AddAsync(_newWorkout);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Workout added successfully!", Severity.Success);
+        }
+
+        _newWorkout = new Workout() { Date = DateTime.Today };
+        await LoadWorkoutsAsync();
+    }
+
+    private void EditWorkout(Workout workout)
+    {
+        _newWorkout = workout;
+        _isEditingWorkout = true;
+    }
+
+    private void CancelEditWorkout()
+    {
+        _newWorkout = new Workout() { Date = DateTime.Today };
+        _isEditingWorkout = false;
+    }
+
+    private async Task DeleteWorkout(Workout workout)
+    {
+        DbContext.Workouts.Remove(workout);
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Workout deleted successfully!", Severity.Success);
+        await LoadWorkoutsAsync();
+
+        if (_selectedWorkout?.Id == workout.Id)
+        {
+            _selectedWorkout = null;
+            _exerciseSets.Clear();
+        }
+    }
+
+    private async Task ViewExercises(Workout workout)
+    {
+        _selectedWorkout = workout;
+        _newExerciseSet = new ExerciseSet
+        {
+            WorkoutId = workout.Id,
+            WeightUnit = "lbs"
+        };
+        await LoadExerciseSetsAsync();
+    }
+
+    private async Task LoadExerciseSetsAsync()
+    {
+        if (_selectedWorkout == null) return;
+
+        _loadingExercises = true;
+        _exerciseSets = await DbContext.ExerciseSets
+            .Where(es => es.WorkoutId == _selectedWorkout.Id)
+            .OrderBy(es => es.ExerciseName)
+            .ThenBy(es => es.SetNumber)
+            .ToListAsync();
+        _loadingExercises = false;
+    }
+
+    private async Task SaveExerciseSet()
+    {
+        if (_selectedWorkout == null) return;
+
+        if (_isEditingExercise)
+        {
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Exercise set updated successfully!", Severity.Success);
+            _isEditingExercise = false;
+        }
+        else
+        {
+            _newExerciseSet.WorkoutId = _selectedWorkout.Id;
+            await DbContext.ExerciseSets.AddAsync(_newExerciseSet);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Exercise set added successfully!", Severity.Success);
+        }
+
+        _newExerciseSet = new ExerciseSet
+        {
+            WorkoutId = _selectedWorkout.Id,
+            WeightUnit = "lbs"
+        };
+        await LoadExerciseSetsAsync();
+    }
+
+    private void EditExerciseSet(ExerciseSet exerciseSet)
+    {
+        _newExerciseSet = exerciseSet;
+        _isEditingExercise = true;
+    }
+
+    private void CancelEditExercise()
+    {
+        if (_selectedWorkout == null) return;
+
+        _newExerciseSet = new ExerciseSet
+        {
+            WorkoutId = _selectedWorkout.Id,
+            WeightUnit = "lbs"
+        };
+        _isEditingExercise = false;
+    }
+
+    private async Task DeleteExerciseSet(ExerciseSet exerciseSet)
+    {
+        DbContext.ExerciseSets.Remove(exerciseSet);
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Exercise set deleted successfully!", Severity.Success);
+        await LoadExerciseSetsAsync();
+    }
+}

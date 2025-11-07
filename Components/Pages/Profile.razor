@@ -1,0 +1,187 @@
+@page "/profile"
+@inject BioStackDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>BioStack - Profile</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Profile</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Personal Information</MudText>
+            <MudForm @ref="_form" Model="@_userProfile" @bind-IsValid="@_isValid">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_userProfile.FirstName" Label="First Name" Required="true" RequiredError="First name is required!" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_userProfile.LastName" Label="Last Name" Required="true" RequiredError="Last name is required!" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker @bind-Date="_userProfile.DateOfBirth" Label="Date of Birth" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h6" Class="mb-3">Body Metrics</MudText>
+
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="_userProfile.Height" Label="Height" Min="0" Max="300" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect @bind-Value="_userProfile.HeightUnit" Label="Height Unit">
+                            <MudSelectItem Value="@("in")">inches</MudSelectItem>
+                            <MudSelectItem Value="@("cm")">centimeters</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="_userProfile.Weight" Label="Weight" Min="0" Max="1000" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect @bind-Value="_userProfile.WeightUnit" Label="Weight Unit">
+                            <MudSelectItem Value="@("lbs")">pounds</MudSelectItem>
+                            <MudSelectItem Value="@("kg")">kilograms</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h6" Class="mb-3">Goals & Notes</MudText>
+
+                <MudTextField @bind-Value="_userProfile.FitnessGoals" Label="Fitness Goals" Lines="3" />
+                <MudTextField @bind-Value="_userProfile.HealthNotes" Label="Health Notes" Lines="3" Class="mt-3" />
+
+                <div class="d-flex justify-end mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isValid)" OnClick="SaveProfile">Save</MudButton>
+                </div>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Weight History</MudText>
+            @if (_healthMetrics.Any())
+            {
+                <MudChart ChartType="ChartType.Line" ChartSeries="@_weightSeries" XAxisLabels="@_weightLabels" Width="100%" Height="300px" />
+                
+                <MudDivider Class="my-4" />
+                
+                <MudText Typo="Typo.body1">
+                    <strong>Current Weight:</strong> @_currentWeight @_userProfile.WeightUnit
+                </MudText>
+                
+                <MudText Typo="Typo.body1">
+                    <strong>Average Weight (30 days):</strong> @_averageWeight.ToString("0.0") @_userProfile.WeightUnit
+                </MudText>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No weight history available. Log your weight in the Health Metrics section.</MudAlert>
+            }
+        </MudPaper>
+
+        <MudPaper Class="pa-4 mt-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Account Settings</MudText>
+            
+            <MudText Typo="Typo.h6" Class="mb-2">Preferences</MudText>
+            <MudSwitch @bind-Checked="_emailNotifications" Label="Email Notifications" Color="Color.Primary" />
+            <MudSwitch @bind-Checked="_darkMode" Label="Dark Mode" Color="Color.Secondary" />
+            
+            <MudDivider Class="my-4" />
+            
+            <MudText Typo="Typo.h6" Class="mb-2">Data Management</MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ExportData" FullWidth="true" Class="mb-2">Export Your Data</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteAccount" FullWidth="true">Delete Account</MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private UserProfile _userProfile = new();
+    private bool _isValid;
+    private MudForm? _form;
+    private List<HealthMetric> _healthMetrics = new();
+
+    // Chart data
+    private List<ChartSeries> _weightSeries = new();
+    private string[] _weightLabels = Array.Empty<string>();
+    private decimal _currentWeight = 0;
+    private decimal _averageWeight = 0;
+
+    // Settings
+    private bool _emailNotifications = true;
+    private bool _darkMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfileDataAsync();
+    }
+
+    private async Task LoadProfileDataAsync()
+    {
+        // Load user profile
+        var profile = await DbContext.UserProfiles.FirstOrDefaultAsync();
+        if (profile != null)
+        {
+            _userProfile = profile;
+        }
+
+        // Load health metrics for weight history
+        _healthMetrics = await DbContext.HealthMetrics
+            .Where(hm => hm.Weight.HasValue)
+            .OrderBy(hm => hm.Date)
+            .Take(30)
+            .ToListAsync();
+
+        if (_healthMetrics.Any())
+        {
+            // Prepare weight chart data
+            _weightLabels = _healthMetrics.Select(hm => hm.Date.ToString("MMM dd")).ToArray();
+            var weightData = _healthMetrics.Select(hm => (double)hm.Weight!.Value).ToArray();
+
+            _weightSeries = new List<ChartSeries>
+            {
+                new ChartSeries { Name = "Weight", Data = weightData }
+            };
+
+            // Calculate stats
+            var latestMetric = _healthMetrics.OrderByDescending(hm => hm.Date).FirstOrDefault();
+            if (latestMetric?.Weight.HasValue == true)
+            {
+                _currentWeight = latestMetric.Weight.Value;
+            }
+
+            _averageWeight = _healthMetrics
+                .Where(hm => hm.Weight.HasValue)
+                .Average(hm => hm.Weight!.Value);
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        if (_userProfile.Id == 0)
+        {
+            // New profile
+            await DbContext.UserProfiles.AddAsync(_userProfile);
+        }
+        else
+        {
+            // Existing profile
+            DbContext.UserProfiles.Update(_userProfile);
+        }
+
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Profile saved successfully!", Severity.Success);
+    }
+
+    private void ExportData() => Snackbar.Add("Data export started. You will receive an email when it's ready.", Severity.Info);
+
+
+    private void DeleteAccount()
+    {
+        Snackbar.Add("This feature is not implemented in the demo.", Severity.Warning);
+    }
+}

@@ -1,0 +1,237 @@
+@page "/supplements"
+@inject BioStackDbContext DbContext
+@inject ISnackbar Snackbar
+
+<PageTitle>BioStack - Supplements</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-4">Supplements</MudText>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Add New Supplement</MudText>
+            <MudForm @ref="_form" Model="@_newSupplement" @bind-IsValid="@_isValid">
+                <MudTextField @bind-Value="_newSupplement.Name" Label="Name" Required="true" RequiredError="Name is required!" />
+                <MudSelect @bind-Value="_newSupplement.Category" Label="Category" Required="true" RequiredError="Category is required!">
+                    @foreach (var category in _categories)
+                    {
+                        <MudSelectItem Value="@category">@category</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudTextField @bind-Value="_newSupplement.Dosage" Label="Dosage" Required="true" RequiredError="Dosage is required!" />
+                <MudTextField @bind-Value="_newSupplement.Notes" Label="Notes" Lines="3" />
+                <MudSwitch @bind-Checked="_newSupplement.IsActive" Label="Active" Color="Color.Primary" />
+                <div class="d-flex justify-space-between mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isValid)" OnClick="@AddSupplement">
+                        @if (_isEditing)
+                        {
+                            <span>Update</span>
+                        }
+                        else
+                        {
+                            <span>Add</span>
+                        }
+                    </MudButton>
+                    @if (_isEditing)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@CancelEdit">Cancel</MudButton>
+                    }
+                </div>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="8">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h5" Class="mb-4">Your Supplements</MudText>
+            <MudTable Items="@_supplements" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Primary">
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Category</MudTh>
+                    <MudTh>Dosage</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                    <MudTd DataLabel="Category">@context.Category</MudTd>
+                    <MudTd DataLabel="Dosage">@context.Dosage</MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (context.IsActive)
+                        {
+                            <MudChip Color="Color.Success" Size="Size.Small">Active</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Color="Color.Default" Size="Size.Small">Inactive</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditSupplement(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => DeleteSupplement(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.PlaylistAdd" Size="Size.Small" OnClick="@(() => LogIntake(context))" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@if (_showIntakeDialog)
+{
+    <MudDialog Open="@_showIntakeDialog" OnClose="CloseIntakeDialog">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Log Supplement Intake</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudForm @ref="_intakeForm" Model="@_newIntake">
+                <MudText>@_selectedSupplement?.Name (@_selectedSupplement?.Dosage)</MudText>
+                <MudDatePicker Date="_selectedDate" Label="Date" />
+                <MudTimePicker Time="_selectedTime" Label="Time" />
+                <MudSwitch @bind-Checked="_newIntake.Taken" Label="Taken" Color="Color.Success" />
+                <MudTextField @bind-Value="_newIntake.Notes" Label="Notes" Lines="2" />
+            </MudForm>
+        </DialogContent>
+        <DialogActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveIntake">Save</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CloseIntakeDialog">Cancel</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+
+@code {
+    private List<Supplement> _supplements = new();
+    private Supplement _newSupplement = new();
+    private bool _isValid;
+    private bool _isEditing = false;
+    private MudForm? _form;
+    private string _searchString = "";
+    private bool _loading = true;
+
+    // Intake logging
+    private bool _showIntakeDialog = false;
+    private IntakeLog _newIntake = new();
+    private Supplement? _selectedSupplement;
+    private MudForm? _intakeForm;
+    private TimeSpan _selectedTime = DateTime.Now.TimeOfDay;
+    private DateTime? _selectedDate = DateTime.Today;
+
+    private List<string> _categories = new List<string>
+    {
+        "Protein",
+        "Vitamin",
+        "Mineral",
+        "Omega-3",
+        "Amino Acid",
+        "Performance",
+        "Recovery",
+        "Herbal",
+        "Other"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSupplementsAsync();
+    }
+
+    private async Task LoadSupplementsAsync()
+    {
+        _loading = true;
+        _supplements = await DbContext.Supplements.ToListAsync();
+        _loading = false;
+    }
+
+    private async Task AddSupplement()
+    {
+        if (_isEditing)
+        {
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Supplement updated successfully!", Severity.Success);
+            _isEditing = false;
+        }
+        else
+        {
+            await DbContext.Supplements.AddAsync(_newSupplement);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add("Supplement added successfully!", Severity.Success);
+        }
+
+        _newSupplement = new Supplement();
+        await LoadSupplementsAsync();
+    }
+
+    private void EditSupplement(Supplement supplement)
+    {
+        _newSupplement = supplement;
+        _isEditing = true;
+    }
+
+    private void CancelEdit()
+    {
+        _newSupplement = new Supplement();
+        _isEditing = false;
+    }
+
+    private async Task DeleteSupplement(Supplement supplement)
+    {
+        DbContext.Supplements.Remove(supplement);
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Supplement deleted successfully!", Severity.Success);
+        await LoadSupplementsAsync();
+    }
+
+    private void LogIntake(Supplement supplement)
+    {
+        _selectedSupplement = supplement;
+        _newIntake = new IntakeLog
+        {
+            SupplementId = supplement.Id,
+            IntakeTime = DateTime.Now,
+            Taken = true
+        };
+        _selectedTime = DateTime.Now.TimeOfDay;
+        _selectedDate = DateTime.Today;
+        _showIntakeDialog = true;
+    }
+
+    private async Task SaveIntake()
+    {
+        // Combine date and time
+        var dateOnly = _newIntake.IntakeTime.Date;
+        _newIntake.IntakeTime = dateOnly.Add(_selectedTime);
+        
+        await DbContext.IntakeLogs.AddAsync(_newIntake);
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Intake logged successfully!", Severity.Success);
+        _showIntakeDialog = false;
+    }
+
+    private void CloseIntakeDialog()
+    {
+        _showIntakeDialog = false;
+    }
+    
+    private void DateChanged(DateTime? date)
+    {
+        _selectedDate = date;
+        if (date.HasValue)
+        {
+            _newIntake.IntakeTime = date.Value.Date.Add(_selectedTime);
+        }
+    }
+    
+    private void TimeChanged(TimeSpan time)
+    {
+        _selectedTime = time;
+        if (_selectedDate.HasValue)
+        {
+            _newIntake.IntakeTime = _selectedDate.Value.Date.Add(time);
+        }
+    }
+}
