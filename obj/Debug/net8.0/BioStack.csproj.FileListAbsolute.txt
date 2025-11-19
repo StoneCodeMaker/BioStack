@@ -128,4 +128,3 @@ C:\Users\camer\OneDrive\BioStack\obj\Debug\net8.0\BioStack.pdb
 C:\Users\camer\OneDrive\BioStack\obj\Debug\net8.0\BioStack.genruntimeconfig.cache
 C:\Users\camer\OneDrive\BioStack\obj\Debug\net8.0\ref\BioStack.dll
 C:\Users\camer\OneDrive\BioStack\obj\Debug\net8.0\BioStack.sourcelink.json
-C:\Users\camer\OneDrive\BioStack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

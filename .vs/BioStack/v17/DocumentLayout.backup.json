@@ -3,6 +3,50 @@
   "WorkspaceRootPath": "C:\\Users\\camer\\OneDrive\\BioStack\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\supplement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\supplement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\intakelog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\intakelog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\components\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:components\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\data\\dbseeder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:data\\dbseeder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\workout.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\workout.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\userprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\userprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\healthmetric.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\healthmetric.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\models\\exerciseset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:models\\exerciseset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\components\\pages\\supplements.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:components\\pages\\supplements.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|c:\\users\\camer\\onedrive\\biostack\\components\\pages\\profile.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{52DD79DF-C303-49B3-BAEF-6F544968C92E}|BioStack.csproj|solutionrelative:components\\pages\\profile.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -17,11 +61,144 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 7,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DbSeeder.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Data\\DbSeeder.cs",
+              "RelativeDocumentMoniker": "Data\\DbSeeder.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Data\\DbSeeder.cs",
+              "RelativeToolTip": "Data\\DbSeeder.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:28:17.207Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:28:01.576Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Workout.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\Workout.cs",
+              "RelativeDocumentMoniker": "Models\\Workout.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\Workout.cs",
+              "RelativeToolTip": "Models\\Workout.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:27:57.497Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "UserProfile.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\UserProfile.cs",
+              "RelativeDocumentMoniker": "Models\\UserProfile.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\UserProfile.cs",
+              "RelativeToolTip": "Models\\UserProfile.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:13:20.682Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "IntakeLog.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\IntakeLog.cs",
+              "RelativeDocumentMoniker": "Models\\IntakeLog.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\IntakeLog.cs",
+              "RelativeToolTip": "Models\\IntakeLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:27:52.178Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MainLayout.razor",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Layout\\MainLayout.razor",
+              "RelativeDocumentMoniker": "Components\\Layout\\MainLayout.razor",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Layout\\MainLayout.razor",
+              "RelativeToolTip": "Components\\Layout\\MainLayout.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-11-07T04:19:53.122Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "HealthMetric.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\HealthMetric.cs",
+              "RelativeDocumentMoniker": "Models\\HealthMetric.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\HealthMetric.cs",
+              "RelativeToolTip": "Models\\HealthMetric.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAAIwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:13:24.506Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Supplement.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\Supplement.cs",
+              "RelativeDocumentMoniker": "Models\\Supplement.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\Supplement.cs",
+              "RelativeToolTip": "Models\\Supplement.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:13:21.138Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "ExerciseSet.cs",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\ExerciseSet.cs",
+              "RelativeDocumentMoniker": "Models\\ExerciseSet.cs",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Models\\ExerciseSet.cs",
+              "RelativeToolTip": "Models\\ExerciseSet.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-07T04:13:23.21Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Pages\\Home.razor",
+              "RelativeToolTip": "Components\\Pages\\Home.razor",
+              "ViewState": "AgIAACcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-11-07T04:11:20.924Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "Supplements.razor",
+              "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Pages\\Supplements.razor",
+              "RelativeDocumentMoniker": "Components\\Pages\\Supplements.razor",
+              "ToolTip": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Pages\\Supplements.razor",
+              "RelativeToolTip": "Components\\Pages\\Supplements.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-11-07T04:10:27.518Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "Profile.razor",
               "DocumentMoniker": "C:\\Users\\camer\\OneDrive\\BioStack\\Components\\Pages\\Profile.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Profile.razor",
@@ -29,12 +206,11 @@
               "RelativeToolTip": "Components\\Pages\\Profile.razor",
               "ViewState": "AgIAAAYAAAAAAAAAAAAAABkAAAArAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-11-07T01:14:14.858Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-07T01:14:14.858Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 12,
               "Title": "Microsoft.Common.CurrentVersion.targets",
               "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
