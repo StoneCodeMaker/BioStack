@@ -163,16 +163,60 @@
             }
         }
 
-        // Get today's supplement intakes
-        _todayIntakes = await DbContext.IntakeLogs
+        // Get today's supplement intakes and ensure every active supplement is represented
+        var todaysLogs = await DbContext.IntakeLogs
             .Include(il => il.Supplement)
             .Where(il => il.IntakeTime.Date == today)
             .ToListAsync();
 
-        // Calculate supplement adherence
-        if (_todayIntakes.Any())
+        var activeSupplements = await DbContext.Supplements
+            .Where(s => s.IsActive)
+            .ToListAsync();
+
+        var logLookup = todaysLogs
+            .GroupBy(il => il.SupplementId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(l => l.IntakeTime).First());
+
+        _todayIntakes = activeSupplements
+            .Select(supplement =>
+            {
+                if (logLookup.TryGetValue(supplement.Id, out var log))
+                {
+                    return log;
+                }
+
+                return new IntakeLog
+                {
+                    SupplementId = supplement.Id,
+                    Supplement = supplement,
+                    IntakeTime = today,
+                    Taken = false
+                };
+            })
+            .OrderBy(i => i.Supplement?.Name)
+            .ToList();
+
+        // Include logs for inactive supplements so historical data still shows up
+        _todayIntakes.AddRange(todaysLogs.Where(log => activeSupplements.All(s => s.Id != log.SupplementId)));
+
+        var takenDistinctSupplements = todaysLogs
+            .Where(il => il.Taken)
+            .Select(il => il.SupplementId)
+            .Distinct()
+            .Count();
+
+        if (activeSupplements.Any())
         {
-            _supplementAdherence = (double)_todayIntakes.Count(i => i.Taken) / _todayIntakes.Count * 100;
+            _supplementAdherence = (double)takenDistinctSupplements / activeSupplements.Count * 100;
+        }
+        else if (todaysLogs.Any())
+        {
+            var takenLogs = todaysLogs.Count(il => il.Taken);
+            _supplementAdherence = (double)takenLogs / todaysLogs.Count * 100;
+        }
+        else
+        {
+            _supplementAdherence = 0;
         }
 
         // Get recent workouts
