@@ -185,31 +185,47 @@
         // Get all workouts within the date range
         var workouts = await DbContext.Workouts
             .Where(w => w.Date.Date >= _dateRange.Start!.Value.Date && w.Date.Date <= _dateRange.End!.Value.Date)
+            .OrderBy(w => w.Date)
             .ToListAsync();
 
-        // Get all exercise sets for these workouts
-        var workoutIds = workouts.Select(w => w.Id).ToList();
-        var exerciseSets = await DbContext.ExerciseSets
-            .Where(es => workoutIds.Contains(es.WorkoutId))
-            .ToListAsync();
-
-        // Calculate totals
+        // Calculate totals for the summary tiles
         _totalWorkouts = workouts.Count;
         _totalDuration = workouts.Sum(w => w.DurationMinutes);
 
-        // Group workouts by type
-        var workoutsByType = workouts
-            .GroupBy(w => w.WorkoutType ?? "Other")
-            .Select(g => new { Type = g.Key, Count = g.Count(), Duration = g.Sum(w => w.DurationMinutes) })
-            .OrderByDescending(g => g.Count)
+        // Build a continuous date list for the selected range
+        var startDate = _dateRange.Start!.Value.Date;
+        var endDate = _dateRange.End!.Value.Date;
+        var daysInRange = Enumerable.Range(0, (endDate - startDate).Days + 1)
+            .Select(offset => startDate.AddDays(offset))
             .ToList();
 
+        // Precompute counts and duration per day
+        var workoutsByDay = workouts
+            .GroupBy(w => w.Date.Date)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    Count = g.Count(),
+                    Duration = g.Sum(w => w.DurationMinutes)
+                });
+
+        var dailyCounts = daysInRange
+            .Select(date => workoutsByDay.TryGetValue(date, out var summary) ? summary.Count : 0)
+            .Select(count => (double)count)
+            .ToArray();
+
+        var dailyDurations = daysInRange
+            .Select(date => workoutsByDay.TryGetValue(date, out var summary) ? summary.Duration : 0)
+            .Select(duration => (double)duration)
+            .ToArray();
+
         // Prepare chart data
-        _workoutLabels = workoutsByType.Select(w => w.Type).ToArray();
+        _workoutLabels = daysInRange.Select(d => d.ToString("MMM dd")).ToArray();
         _workoutSeries = new List<ChartSeries>
         {
-            new ChartSeries { Name = "Workouts", Data = workoutsByType.Select(w => (double)w.Count).ToArray() },
-            new ChartSeries { Name = "Duration (min)", Data = workoutsByType.Select(w => (double)w.Duration).ToArray() }
+            new ChartSeries { Name = "Workouts", Data = dailyCounts },
+            new ChartSeries { Name = "Duration (min)", Data = dailyDurations }
         };
     }
 
