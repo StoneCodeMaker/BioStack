@@ -1,0 +1,43 @@
+@using BioStack.Models
+@using BioStack.Data
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">
+            How are you feeling today?
+        </MudText>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2">Energy Level (@_energy)</MudText>
+                <MudSlider @bind-Value="_energy" Min="1" Max="10" Step="1" Color="Color.Primary" ValueLabel="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2">Sleep Quality (@_sleep)</MudText>
+                <MudSlider @bind-Value="_sleep" Min="1" Max="10" Step="1" Color="Color.Info" ValueLabel="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int InitialEnergy { get; set; } = 5;
+    [Parameter] public int InitialSleep { get; set; } = 5;
+
+    private int _energy;
+    private int _sleep;
+
+    protected override void OnInitialized()
+    {
+        _energy = InitialEnergy > 0 ? InitialEnergy : 5;
+        _sleep = InitialSleep > 0 ? InitialSleep : 5;
+    }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(new { Energy = _energy, Sleep = _sleep }));
+    void Cancel() => MudDialog.Cancel();
+}

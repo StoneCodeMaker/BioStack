@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
+builder.Services.AddScoped<BioStack.Services.ThemeService>();
 
 // Add database context
 builder.Services.AddDbContext<BioStackDbContext>(options =>

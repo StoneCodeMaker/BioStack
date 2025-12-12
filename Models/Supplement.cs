@@ -22,6 +22,8 @@ public class Supplement
     
     public bool IsActive { get; set; } = true;
     
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
+    
     // Navigation properties
     public ICollection<IntakeLog> IntakeLogs { get; set; } = new List<IntakeLog>();
 }

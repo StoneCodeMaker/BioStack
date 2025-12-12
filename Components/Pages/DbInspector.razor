@@ -1,0 +1,57 @@
+@page "/db-inspector"
+@using Microsoft.EntityFrameworkCore
+@inject BioStackDbContext DbContext
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3">Database Inspector</MudText>
+    <MudText Typo="Typo.body1">This page allows you to view the raw data stored in your database to debug issues.</MudText>
+
+    <MudText Typo="Typo.h5" Class="mt-4">Intake Logs (Raw Data)</MudText>
+    <MudTable Items="@_logs" Dense="true" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Supplement</MudTh>
+            <MudTh>Taken</MudTh>
+            <MudTh>LogDate (Should be 00:00:00)</MudTh>
+            <MudTh>IntakeTime</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Id</MudTd>
+            <MudTd>@context.Supplement?.Name</MudTd>
+            <MudTd Style="@(context.Taken ? "color:green;font-weight:bold" : "color:red")">@context.Taken</MudTd>
+            <MudTd>@context.LogDate.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+            <MudTd>@context.IntakeTime.ToString("g")</MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudText Typo="Typo.h5" Class="mt-4">Supplements</MudText>
+    <MudTable Items="@_supplements" Dense="true" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>IsActive</MudTh>
+            <MudTh>Category</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Id</MudTd>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.IsActive</MudTd>
+            <MudTd>@context.Category</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<IntakeLog> _logs = new();
+    private List<Supplement> _supplements = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _logs = await DbContext.IntakeLogs
+            .Include(il => il.Supplement)
+            .OrderByDescending(x => x.IntakeTime)
+            .ToListAsync();
+
+        _supplements = await DbContext.Supplements.ToListAsync();
+    }
+}

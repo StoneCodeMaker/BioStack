@@ -12,6 +12,9 @@ public class IntakeLog
     
     [Required]
     public DateTime IntakeTime { get; set; }
+
+    [Required]
+    public DateTime LogDate { get; set; }
     
     public bool Taken { get; set; }
     

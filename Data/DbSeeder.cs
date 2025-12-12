@@ -65,7 +65,8 @@ public static class DbSeeder
                 Category = "Protein",
                 Dosage = "1 scoop (25g)",
                 Notes = "Take after workouts",
-                IsActive = true
+                IsActive = true,
+                CreatedDate = DateTime.Now.AddDays(-30)
             },
             new Supplement
             {
@@ -73,7 +74,8 @@ public static class DbSeeder
                 Category = "Performance",
                 Dosage = "5g",
                 Notes = "Take daily with water",
-                IsActive = true
+                IsActive = true,
+                CreatedDate = DateTime.Now.AddDays(-30)
             },
             new Supplement
             {
@@ -81,7 +83,8 @@ public static class DbSeeder
                 Category = "Vitamin",
                 Dosage = "1 tablet",
                 Notes = "Take with breakfast",
-                IsActive = true
+                IsActive = true,
+                CreatedDate = DateTime.Now.AddDays(-30)
             },
             new Supplement
             {
@@ -89,7 +92,8 @@ public static class DbSeeder
                 Category = "Omega-3",
                 Dosage = "2 capsules",
                 Notes = "Take with meals",
-                IsActive = true
+                IsActive = true,
+                CreatedDate = DateTime.Now.AddDays(-30)
             },
             new Supplement
             {
@@ -97,7 +101,8 @@ public static class DbSeeder
                 Category = "Vitamin",
                 Dosage = "2000 IU",
                 Notes = "Take daily with fat-containing meal",
-                IsActive = true
+                IsActive = true,
+                CreatedDate = DateTime.Now.AddDays(-30)
             }
         };
 

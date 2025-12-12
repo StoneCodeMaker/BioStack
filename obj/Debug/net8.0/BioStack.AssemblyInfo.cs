@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BioStack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bb7f7c846e4113bb565f7064bc2ab061125b0945")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed6b9aeef5131aabe83e6703072a199432425b74")]
 [assembly: System.Reflection.AssemblyProductAttribute("BioStack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BioStack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

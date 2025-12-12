@@ -92,8 +92,8 @@
         <DialogContent>
             <MudForm @ref="_intakeForm" Model="@_newIntake">
                 <MudText>@_selectedSupplement?.Name (@_selectedSupplement?.Dosage)</MudText>
-                <MudDatePicker Date="_selectedDate" Label="Date" />
-                <MudTimePicker Time="_selectedTime" Label="Time" />
+                <MudDatePicker @bind-Date="_selectedDate" Label="Date" />
+                <MudTimePicker @bind-Time="_selectedTime" Label="Time" />
                 <MudSwitch @bind-Checked="_newIntake.Taken" Label="Taken" Color="Color.Success" />
                 <MudTextField @bind-Value="_newIntake.Notes" Label="Notes" Lines="2" />
             </MudForm>
@@ -119,7 +119,7 @@
     private IntakeLog _newIntake = new();
     private Supplement? _selectedSupplement;
     private MudForm? _intakeForm;
-    private TimeSpan _selectedTime = DateTime.Now.TimeOfDay;
+    private TimeSpan? _selectedTime = DateTime.Now.TimeOfDay;
     private DateTime? _selectedDate = DateTime.Today;
 
     private List<string> _categories = new List<string>
@@ -193,6 +193,7 @@
         {
             SupplementId = supplement.Id,
             IntakeTime = DateTime.Now,
+            LogDate = DateTime.Today,
             Taken = true
         };
         _selectedTime = DateTime.Now.TimeOfDay;
@@ -202,9 +203,10 @@
 
     private async Task SaveIntake()
     {
-        // Combine date and time
-        var dateOnly = _newIntake.IntakeTime.Date;
-        _newIntake.IntakeTime = dateOnly.Add(_selectedTime);
+        var dateOnly = (_selectedDate ?? DateTime.Today).Date;
+        _newIntake.LogDate = dateOnly;
+        var timeValue = _selectedTime ?? TimeSpan.Zero;
+        _newIntake.IntakeTime = dateOnly.Add(timeValue);
         
         await DbContext.IntakeLogs.AddAsync(_newIntake);
         await DbContext.SaveChangesAsync();
@@ -215,23 +217,5 @@
     private void CloseIntakeDialog()
     {
         _showIntakeDialog = false;
-    }
-    
-    private void DateChanged(DateTime? date)
-    {
-        _selectedDate = date;
-        if (date.HasValue)
-        {
-            _newIntake.IntakeTime = date.Value.Date.Add(_selectedTime);
-        }
-    }
-    
-    private void TimeChanged(TimeSpan time)
-    {
-        _selectedTime = time;
-        if (_selectedDate.HasValue)
-        {
-            _newIntake.IntakeTime = _selectedDate.Value.Date.Add(time);
-        }
     }
 }

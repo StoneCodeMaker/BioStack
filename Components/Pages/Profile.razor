@@ -2,6 +2,11 @@
 @inject BioStackDbContext DbContext
 @inject ISnackbar Snackbar
 
+@inject BioStack.Services.ThemeService ThemeService
+@inject IJSRuntime JS
+@using System.Text.Json
+@using System.Text
+
 <PageTitle>BioStack - Profile</PageTitle>
 
 <MudText Typo="Typo.h3" Class="mb-4">Profile</MudText>
@@ -88,7 +93,7 @@
             
             <MudText Typo="Typo.h6" Class="mb-2">Preferences</MudText>
             <MudSwitch @bind-Checked="_emailNotifications" Label="Email Notifications" Color="Color.Primary" />
-            <MudSwitch @bind-Checked="_darkMode" Label="Dark Mode" Color="Color.Secondary" />
+            <MudSwitch T="bool" Checked="@ThemeService.IsDarkMode" CheckedChanged="@(async (e) => ThemeService.SetDarkMode(e))" Label="Dark Mode" Color="Color.Secondary" />
             
             <MudDivider Class="my-4" />
             
@@ -113,7 +118,7 @@
 
     // Settings
     private bool _emailNotifications = true;
-    private bool _darkMode = false;
+    // Dark mode handled by ThemeService
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,11 +178,65 @@
             DbContext.UserProfiles.Update(_userProfile);
         }
 
+        // Check if weight has changed and add a new health metric if so
+        // Using _currentWeight which reflects the most recent HealthMetric or 0
+        if (_userProfile.Weight > 0 && _userProfile.Weight != _currentWeight)
+        {
+            var newMetric = new HealthMetric
+            {
+                Date = DateTime.Now,
+                Weight = _userProfile.Weight,
+                WeightUnit = _userProfile.WeightUnit ?? "lbs"
+            };
+            DbContext.HealthMetrics.Add(newMetric);
+        }
+
         await DbContext.SaveChangesAsync();
         Snackbar.Add("Profile saved successfully!", Severity.Success);
+        
+        // Refresh data to update chart and stats
+        await LoadProfileDataAsync();
     }
 
-    private void ExportData() => Snackbar.Add("Data export started. You will receive an email when it's ready.", Severity.Info);
+    private async Task ExportData()
+    {
+        try
+        {
+            // 1. Collect all data
+            var exportData = new
+            {
+                UserProfile = await DbContext.UserProfiles.FirstOrDefaultAsync(),
+                HealthMetrics = await DbContext.HealthMetrics.ToListAsync(),
+                Workouts = await DbContext.Workouts.Include(w => w.ExerciseSets).ToListAsync(),
+                IntakeLogs = await DbContext.IntakeLogs.Include(l => l.Supplement).ToListAsync(),
+                Supplements = await DbContext.Supplements.ToListAsync(),
+                ExportDate = DateTime.Now
+            };
+
+            // 2. Serialize to JSON
+            var options = new JsonSerializerOptions 
+            { 
+                WriteIndented = true,
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+            };
+            var json = JsonSerializer.Serialize(exportData, options);
+
+            // 3. Convert to bytes for download
+            var bytes = Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+
+            // 4. Trigger download
+            var fileName = $"biostack_export_{DateTime.Now:yyyyMMdd}.json";
+            await JS.InvokeVoidAsync("bioStackInterop.saveAsFile", fileName, base64);
+            
+            Snackbar.Add("Data exported successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Export error: {ex}");
+            Snackbar.Add("Failed to export data.", Severity.Error);
+        }
+    }
 
 
     private void DeleteAccount()

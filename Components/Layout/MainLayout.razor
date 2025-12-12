@@ -1,6 +1,11 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="_bioStackTheme" />
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+@inject BioStack.Services.ThemeService ThemeService
+@implements IDisposable
+
+<MudThemeProvider Theme="_bioStackTheme" IsDarkMode="@ThemeService.IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -12,8 +17,8 @@
             <MudText Typo="Typo.h5">BioStack</MudText>
         </div>
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Edge="Edge.End" />
-        <MudIconButton Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" Edge="Edge.End" />
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Edge="Edge.End" OnClick="@(() => Snackbar.Add("No new notifications", Severity.Info))" />
+        <MudIconButton Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" Edge="Edge.End" OnClick="@(() => NavManager.NavigateTo("/profile"))" />
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
         <MudDrawerHeader>
@@ -51,8 +56,28 @@
             DrawerBackground = "#FFF",
             DrawerText = "rgba(0,0,0, 0.7)",
             Success = "#4caf50"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#009688",
+            Secondary = "#37474F",
+            AppbarBackground = "#009688",
+            Background = "#303030", // Standard dark background
+            DrawerBackground = "#373740",
+            DrawerText = "rgba(255,255,255, 0.7)",
+            Success = "#4caf50"
         }
     };
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnChange -= StateHasChanged;
+    }
 
     private void DrawerToggle()
     {

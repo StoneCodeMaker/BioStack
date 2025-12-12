@@ -5,13 +5,14 @@
 
 <MudText Typo="Typo.h3" Class="mb-4">Reports</MudText>
 
+
 <MudGrid>
     <MudItem xs="12">
         <MudPaper Class="pa-4" Elevation="3">
             <MudText Typo="Typo.h5" Class="mb-4">Date Range</MudText>
             <MudGrid>
                 <MudItem xs="12" sm="5" md="4">
-                    <MudDateRangePicker DateRange="_dateRange" Label="Date Range" AutoClose="true" />
+                    <MudDateRangePicker DateRange="@_dateRange" DateRangeChanged="@OnDateRangeChanged" Label="Date Range" AutoClose="true" />
                 </MudItem>
                 <MudItem xs="12" sm="7" md="8">
                     <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
@@ -34,10 +35,10 @@
             }
             else
             {
-                <MudChart ChartType="ChartType.Donut" Width="300px" Height="300px"
-                          InputData="@_supplementAdherenceData" InputLabels="@_supplementAdherenceLabels">
+                <MudChart @key="_dateRange" ChartType="ChartType.Donut" Width="300px" Height="300px"
+                          InputData="@_supplementAdherenceData" InputLabels="@_supplementAdherenceLabels" ChartOptions="@_supplementChartOptions">
                     <CustomGraphics>
-                        <MudText Typo="Typo.h5" Align="Align.Center">@_supplementAdherencePercentage.ToString("0")+"%</MudText>
+                        <MudText Typo="Typo.h5" Align="Align.Center">@_supplementAdherencePercentage.ToString("0")%</MudText>
                         <MudText Typo="Typo.body2" Align="Align.Center">Adherence</MudText>
                     </CustomGraphics>
                 </MudChart>
@@ -52,7 +53,7 @@
                         <MudTd DataLabel="Category">@context.Category</MudTd>
                         <MudTd DataLabel="Adherence">
                             <MudProgressLinear Color="@GetAdherenceColor(context.Percentage)" Value="@context.Percentage" Class="my-0">
-                                <MudText Typo="Typo.caption">@context.Percentage.ToString("0")+"%</MudText>
+                                <MudText Typo="Typo.caption">@context.Percentage.ToString("0")%</MudText>
                             </MudProgressLinear>
                         </MudTd>
                         <MudTd DataLabel="Taken/Total">@context.Taken/@context.Total</MudTd>
@@ -72,7 +73,7 @@
             }
             else
             {
-                <MudChart ChartType="ChartType.Bar" ChartSeries="@_workoutSeries" XAxisLabels="@_workoutLabels" Width="100%" Height="300px" />
+                <MudChart @key="_dateRange" ChartType="ChartType.Bar" ChartSeries="@_workoutSeries" XAxisLabels="@_workoutLabels" Width="100%" Height="300px" />
 
                 <MudDivider Class="my-4" />
 
@@ -100,7 +101,7 @@
             }
             else
             {
-                <MudChart ChartType="ChartType.Line" ChartSeries="@_healthSeries" XAxisLabels="@_healthLabels" Width="100%" Height="350px" />
+                <MudChart @key="_dateRange" ChartType="ChartType.Line" ChartSeries="@_healthSeries" XAxisLabels="@_healthLabels" Width="100%" Height="350px" />
             }
         </MudPaper>
     </MudItem>
@@ -115,6 +116,11 @@
     private string[] _supplementAdherenceLabels = new string[] { "Taken", "Missed" };
     private double _supplementAdherencePercentage = 0;
     private List<SupplementAdherenceByCategory> _supplementAdherenceByType = new();
+    private ChartOptions _supplementChartOptions = new ChartOptions
+    {
+        ChartPalette = new[] { "#2196F3", "#BDBDBD" }, // Blue for Taken, Light Grey for Missed
+        DisableLegend = false
+    };
 
     // Workout volume data
     private List<ChartSeries> _workoutSeries = new();
@@ -128,7 +134,26 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await BackfillLogDatesAsync();
         await LoadReportDataAsync();
+    }
+
+    private async Task BackfillLogDatesAsync()
+    {
+        var logsToFix = await DbContext.IntakeLogs
+            .Where(il => il.LogDate == DateTime.MinValue)
+            .ToListAsync();
+
+        if (logsToFix.Any())
+        {
+            foreach (var log in logsToFix)
+            {
+                log.LogDate = log.IntakeTime.Date;
+            }
+
+            DbContext.IntakeLogs.UpdateRange(logsToFix);
+            await DbContext.SaveChangesAsync();
+        }
     }
 
     private async Task LoadReportDataAsync()
@@ -141,50 +166,127 @@
         await LoadHealthMetricsAsync();
 
         _loading = false;
+        StateHasChanged();
     }
 
     private async Task LoadSupplementAdherenceAsync()
     {
-        // Get all intake logs within the date range
-        var intakeLogs = await DbContext.IntakeLogs
+        // 1. Get Date Range info
+        var startDate = _dateRange.Start!.Value.Date;
+        var endDate = _dateRange.End!.Value.Date;
+        var totalDays = (endDate - startDate).Days + 1;
+
+        // 2. Fet active supplements (expected to be taken every day)
+        // Note: Ideally we should check if they were active during that period, but for now checking IsActive is a good approximation.
+        var activeSupplements = await DbContext.Supplements.Where(s => s.IsActive).ToListAsync();
+        
+        // 3. Get actual logs
+        var queryEndDate = endDate.AddDays(1);
+        
+        // Use IntakeTime for initial filtering as it's more reliable, then filter by LogDate in memory
+        // This avoids potential SQLite date comparison weirdness
+        var allPotentialLogs = await DbContext.IntakeLogs
             .Include(il => il.Supplement)
-            .Where(il => il.IntakeTime.Date >= _dateRange.Start!.Value.Date && il.IntakeTime.Date <= _dateRange.End!.Value.Date)
+            .Where(il => il.IntakeTime >= startDate.AddDays(-5) && il.IntakeTime <= queryEndDate.AddDays(5))
             .ToListAsync();
+            
+        var intakeLogs = allPotentialLogs
+            .Where(il => il.LogDate >= startDate && il.LogDate < queryEndDate)
+            .ToList();
+            
 
-        // Calculate overall adherence
-        int totalIntakes = intakeLogs.Count;
-        int takenIntakes = intakeLogs.Count(il => il.Taken);
-
-        if (totalIntakes > 0)
+        if (!activeSupplements.Any())
         {
-            _supplementAdherencePercentage = (double)takenIntakes / totalIntakes * 100;
-            _supplementAdherenceData = new double[] { takenIntakes, totalIntakes - takenIntakes };
+             _supplementAdherencePercentage = 0;
+             _supplementAdherenceData = new double[] { 0, 1 };
+             _supplementAdherenceByType = new();
+             return;
+        }
+
+        // 4. Calculate Overall Stats
+        // Report Date Range
+        // Expected total doses = Sum for each supplement: Days it existed within the report range
+        int totalExpectedDoses = 0;
+        foreach (var supp in activeSupplements)
+        {
+            // The effective start date for this supplement in this report is Max(ReportStart, CreatedDate)
+            var effectiveStart = startDate > supp.CreatedDate ? startDate : supp.CreatedDate;
+            
+            // If created after report end, it contributes 0 expected doses
+            if (effectiveStart > endDate) continue;
+            
+            // Days active in this range
+            var daysActive = (endDate - effectiveStart).Days + 1;
+            if (daysActive < 0) daysActive = 0; // Just in case
+            
+            totalExpectedDoses += daysActive;
+        }
+
+        int takenDoses = intakeLogs.Count(il => il.Taken);
+        
+        // Ensure we don't show > 100%
+        if (takenDoses > totalExpectedDoses) takenDoses = totalExpectedDoses;
+        
+        int missedDoses = totalExpectedDoses - takenDoses;
+
+        if (totalExpectedDoses > 0)
+        {
+            _supplementAdherencePercentage = (double)takenDoses / totalExpectedDoses * 100;
+            _supplementAdherenceData = new double[] { takenDoses, missedDoses };
         }
         else
         {
             _supplementAdherencePercentage = 0;
-            _supplementAdherenceData = new double[] { 0, 1 }; // Avoid empty chart
+            _supplementAdherenceData = new double[] { 0, 1 };
         }
 
-        // Calculate adherence by category
-        _supplementAdherenceByType = intakeLogs
-            .GroupBy(il => il.Supplement?.Category ?? "Unknown")
-            .Select(g => new SupplementAdherenceByCategory
+        // 5. Calculate Adherence by Category
+        // We need to group active supplements by category first to know expectation per category
+        var supplementsByCategory = activeSupplements.GroupBy(s => s.Category ?? "Unknown");
+
+        _supplementAdherenceByType = new List<SupplementAdherenceByCategory>();
+
+        foreach (var categoryGroup in supplementsByCategory)
+        {
+            var category = categoryGroup.Key;
+            var supplementsInCat = categoryGroup.ToList();
+            
+            // Expected for this category = Sum of (days active in range for each supp)
+            int catExpected = 0;
+            foreach (var supp in supplementsInCat)
             {
-                Category = g.Key,
-                Total = g.Count(),
-                Taken = g.Count(il => il.Taken),
-                Percentage = g.Any() ? (double)g.Count(il => il.Taken) / g.Count() * 100 : 0
-            })
-            .OrderByDescending(s => s.Percentage)
-            .ToList();
+                 var effectiveStart = startDate > supp.CreatedDate ? startDate : supp.CreatedDate;
+                 if (effectiveStart > endDate) continue;
+                 
+                 var daysActive = (endDate - effectiveStart).Days + 1;
+                 if (daysActive < 0) daysActive = 0;
+                 catExpected += daysActive;
+            }
+
+            // Actual taken for this category (from logs that match these supplement IDs)
+            var catTaken = intakeLogs.Count(il => il.Taken && supplementsInCat.Any(s => s.Id == il.SupplementId));
+
+            _supplementAdherenceByType.Add(new SupplementAdherenceByCategory
+            {
+                Category = category,
+                 Total = catExpected,
+                 Taken = catTaken,
+                 Percentage = catExpected > 0 ? (double)catTaken / catExpected * 100 : 0
+            });
+        }
+
+        _supplementAdherenceByType = _supplementAdherenceByType.OrderByDescending(s => s.Percentage).ToList();
     }
 
     private async Task LoadWorkoutVolumeAsync()
     {
         // Get all workouts within the date range
+        var startDate = _dateRange.Start!.Value.Date;
+        var endDate = _dateRange.End!.Value.Date;
+        var queryEndDate = endDate.AddDays(1);
+
         var workouts = await DbContext.Workouts
-            .Where(w => w.Date.Date >= _dateRange.Start!.Value.Date && w.Date.Date <= _dateRange.End!.Value.Date)
+            .Where(w => w.Date >= startDate && w.Date < queryEndDate)
             .OrderBy(w => w.Date)
             .ToListAsync();
 
@@ -193,8 +295,6 @@
         _totalDuration = workouts.Sum(w => w.DurationMinutes);
 
         // Build a continuous date list for the selected range
-        var startDate = _dateRange.Start!.Value.Date;
-        var endDate = _dateRange.End!.Value.Date;
         var daysInRange = Enumerable.Range(0, (endDate - startDate).Days + 1)
             .Select(offset => startDate.AddDays(offset))
             .ToList();
@@ -220,43 +320,56 @@
             .Select(duration => (double)duration)
             .ToArray();
 
+        // Supplements Data
+        // Get all intake logs within the date range
+         var intakeLogs = await DbContext.IntakeLogs
+            .Where(il => il.LogDate >= startDate && il.LogDate < queryEndDate && il.Taken)
+            .ToListAsync();
+            
+        var supplementsByDay = intakeLogs
+            .GroupBy(il => il.LogDate.Date)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var dailySupplements = daysInRange
+            .Select(date => supplementsByDay.TryGetValue(date, out var count) ? count : 0)
+            .Select(count => (double)count)
+            .ToArray();
+
         // Prepare chart data
-        _workoutLabels = daysInRange.Select(d => d.ToString("MMM dd")).ToArray();
+        // Determine label spacing to prevent overlap
+        int labelStep = 1;
+        if (daysInRange.Count > 20) labelStep = 5;
+        else if (daysInRange.Count > 10) labelStep = 2;
+
+        _workoutLabels = daysInRange
+            .Select((d, index) => index % labelStep == 0 ? d.ToString("MMM dd") : "")
+            .ToArray();
+
         _workoutSeries = new List<ChartSeries>
         {
             new ChartSeries { Name = "Workouts", Data = dailyCounts },
-            new ChartSeries { Name = "Duration (min)", Data = dailyDurations }
+            new ChartSeries { Name = "Duration (min)", Data = dailyDurations },
+            new ChartSeries { Name = "Supplements Taken", Data = dailySupplements }
         };
     }
 
     private async Task LoadHealthMetricsAsync()
     {
-        // Get all health metrics within the date range
+        var startDate = _dateRange.Start!.Value.Date;
+        var endDate = _dateRange.End!.Value.Date;
+        var queryEndDate = endDate.AddDays(1);
+
         var healthMetrics = await DbContext.HealthMetrics
-            .Where(hm => hm.Date.Date >= _dateRange.Start!.Value.Date && hm.Date.Date <= _dateRange.End!.Value.Date)
+            .Where(hm => hm.Date >= startDate && hm.Date < queryEndDate)
             .OrderBy(hm => hm.Date)
             .ToListAsync();
 
-        if (healthMetrics.Any())
-        {
-            // Prepare labels (dates)
-            _healthLabels = healthMetrics.Select(hm => hm.Date.ToString("MMM dd")).ToArray();
+        var daysInRange = Enumerable.Range(0, (endDate - startDate).Days + 1)
+            .Select(offset => startDate.AddDays(offset))
+            .ToList();
 
-            // Prepare series data
-            var energyData = healthMetrics.Select(hm => (double?)hm.EnergyLevel ?? 0).ToArray();
-            var sleepQualityData = healthMetrics.Select(hm => (double?)hm.SleepQuality ?? 0).ToArray();
-            var recoveryData = healthMetrics.Select(hm => (double?)hm.RecoveryScore ?? 0).ToArray();
-
-            _healthSeries = new List<ChartSeries>
-            {
-                new ChartSeries { Name = "Energy", Data = energyData },
-                new ChartSeries { Name = "Sleep Quality", Data = sleepQualityData },
-                new ChartSeries { Name = "Recovery", Data = recoveryData }
-            };
-        }
-        else
+        if (!daysInRange.Any())
         {
-            // No data
             _healthLabels = new[] { "No Data" };
             _healthSeries = new List<ChartSeries>
             {
@@ -264,12 +377,52 @@
                 new ChartSeries { Name = "Sleep Quality", Data = new double[] { 0 } },
                 new ChartSeries { Name = "Recovery", Data = new double[] { 0 } }
             };
+            return;
         }
+
+        var metricsByDay = healthMetrics
+            .GroupBy(hm => hm.Date.Date)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Date).First());
+
+        int labelStep = 1;
+        if (daysInRange.Count > 20) labelStep = 5;
+        else if (daysInRange.Count > 10) labelStep = 2;
+
+        _healthLabels = daysInRange
+            .Select((d, index) => index % labelStep == 0 ? d.ToString("MMM dd") : "")
+            .ToArray();
+
+        var energyData = daysInRange
+            .Select(d => metricsByDay.TryGetValue(d, out var hm) ? (double?)hm.EnergyLevel ?? 0 : 0)
+            .ToArray();
+
+        var sleepQualityData = daysInRange
+            .Select(d => metricsByDay.TryGetValue(d, out var hm) ? (double?)hm.SleepQuality ?? 0 : 0)
+            .ToArray();
+
+        var recoveryData = daysInRange
+            .Select(d => metricsByDay.TryGetValue(d, out var hm) ? (double?)hm.RecoveryScore ?? 0 : 0)
+            .ToArray();
+
+        _healthSeries = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Energy", Data = energyData },
+            new ChartSeries { Name = "Sleep Quality", Data = sleepQualityData },
+            new ChartSeries { Name = "Recovery", Data = recoveryData }
+        };
     }
 
     private async Task SetDateRange(int days)
     {
-        _dateRange = new DateRange(DateTime.Now.AddDays(-days), DateTime.Now);
+        var end = DateTime.Today;
+        var start = end.AddDays(-(days - 1));
+        _dateRange = new DateRange(start, end);
+        await LoadReportDataAsync();
+    }
+
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        _dateRange = range;
         await LoadReportDataAsync();
     }
 

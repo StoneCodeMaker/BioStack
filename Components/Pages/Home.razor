@@ -1,5 +1,8 @@
 @page "/"
 @inject BioStackDbContext DbContext
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using BioStack.Components.Dialogs
 
 <PageTitle>BioStack - Dashboard</PageTitle>
 
@@ -9,25 +12,38 @@
     <!-- Health Metrics Summary Card -->
     <MudItem xs="12" md="6">
         <MudPaper Class="pa-4" Elevation="3">
-            <MudText Typo="Typo.h5" Class="mb-4">Today's Health Metrics</MudText>
+            <div class="d-flex justify-space-between align-center mb-4">
+                <MudText Typo="Typo.h5">Today's Health Metrics</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" OnClick="LogMetrics">Log</MudButton>
+            </div>
             <MudGrid>
                 <MudItem xs="6">
-                    <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
-                              InputData="@_energyData" InputLabels="@_energyLabels">
-                        <CustomGraphics>
-                            <MudText Typo="Typo.h5" Align="Align.Center">Energy</MudText>
-                            <MudText Typo="Typo.body1" Align="Align.Center">@_todayMetrics?.EnergyLevel/10</MudText>
-                        </CustomGraphics>
-                    </MudChart>
+                    <div class="d-flex align-center justify-center relative" style="position: relative; width: 200px; height: 200px;">
+                        <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
+                                  InputData="@_energyData" InputLabels="@_energyLabels" ChartOptions="@_energyChartOptions">
+                        </MudChart>
+                        <div class="d-flex flex-column align-center justify-center" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Style="color: #1EC8A5; font-size: 12px;" />
+                                <MudText Typo="Typo.h6" Align="Align.Center">Energy</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Align="Align.Center">@(_todayMetrics?.EnergyLevel ?? 0)/10</MudText>
+                        </div>
+                    </div>
                 </MudItem>
                 <MudItem xs="6">
-                    <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
-                              InputData="@_sleepData" InputLabels="@_sleepLabels">
-                        <CustomGraphics>
-                            <MudText Typo="Typo.h5" Align="Align.Center">Sleep</MudText>
-                            <MudText Typo="Typo.body1" Align="Align.Center">@_todayMetrics?.SleepQuality/10</MudText>
-                        </CustomGraphics>
-                    </MudChart>
+                    <div class="d-flex align-center justify-center relative" style="position: relative; width: 200px; height: 200px;">
+                        <MudChart ChartType="ChartType.Donut" Width="200px" Height="200px"
+                                  InputData="@_sleepData" InputLabels="@_sleepLabels" ChartOptions="@_sleepChartOptions">
+                        </MudChart>
+                        <div class="d-flex flex-column align-center justify-center" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Filled.Circle" Size="Size.Small" Style="color: #2196F3; font-size: 12px;" />
+                                <MudText Typo="Typo.h6" Align="Align.Center">Sleep</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Align="Align.Center">@(_todayMetrics?.SleepQuality ?? 0)/10</MudText>
+                        </div>
+                    </div>
                 </MudItem>
             </MudGrid>
         </MudPaper>
@@ -40,27 +56,27 @@
             <MudProgressLinear Color="Color.Success" Value="@_supplementAdherence" Class="my-4">
                 <MudText Typo="Typo.body2">@_supplementAdherence.ToString("0")%</MudText>
             </MudProgressLinear>
-            <MudList Dense="true">
+            <MudGrid Spacing="2">
                 @foreach (var intake in _todayIntakes)
                 {
-                    <MudListItem>
-                        <div class="d-flex align-center">
+                    <MudItem xs="12" sm="6">
+                        <div @onclick="@(() => ToggleSupplement(intake))" class="d-flex align-center pa-2 rounded mud-paper" style="cursor: pointer;">
                             @if (intake.Taken)
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-3" />
                             }
                             else
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.RadioButtonUnchecked" Color="Color.Default" Class="mr-2" />
+                                <MudIcon Icon="@Icons.Material.Filled.RadioButtonUnchecked" Color="Color.Default" Class="mr-3" />
                             }
                             <div>
                                 <MudText Typo="Typo.body1">@intake.Supplement?.Name</MudText>
-                                <MudText Typo="Typo.caption">@intake.Supplement?.Dosage</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@intake.Supplement?.Dosage</MudText>
                             </div>
                         </div>
-                    </MudListItem>
+                    </MudItem>
                 }
-            </MudList>
+            </MudGrid>
         </MudPaper>
     </MudItem>
 
@@ -134,9 +150,41 @@
     private List<ChartSeries> _weeklySeries = new();
     private string[] _weeklyLabels = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 
+    private ChartOptions _energyChartOptions = new ChartOptions
+    {
+        ChartPalette = new[] { "#1EC8A5", "#E0E0E0" }, // Lighter Teal for Energy, Grey for Empty
+        DisableLegend = true
+    };
+
+    private ChartOptions _sleepChartOptions = new ChartOptions
+    {
+        ChartPalette = new[] { "#2196F3", "#E0E0E0" }, // Blue for Sleep, Grey for Empty
+        DisableLegend = true
+    };
+
     protected override async Task OnInitializedAsync()
     {
+        await BackfillLogDates(); // Restore historical data
         await LoadDashboardDataAsync();
+    }
+
+    private async Task BackfillLogDates()
+    {
+        // One-time fix: Find logs with default LogDate (0001-01-01) and set them to IntakeTime.Date
+        var logsToFix = await DbContext.IntakeLogs
+            .Where(il => il.LogDate == DateTime.MinValue)
+            .ToListAsync();
+
+        if (logsToFix.Any())
+        {
+            foreach (var log in logsToFix)
+            {
+                log.LogDate = log.IntakeTime.Date;
+            }
+            DbContext.IntakeLogs.UpdateRange(logsToFix);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add($"Restored {logsToFix.Count} historical records.", Severity.Success);
+        }
     }
 
     private async Task LoadDashboardDataAsync()
@@ -166,7 +214,7 @@
         // Get today's supplement intakes and ensure every active supplement is represented
         var todaysLogs = await DbContext.IntakeLogs
             .Include(il => il.Supplement)
-            .Where(il => il.IntakeTime.Date == today)
+            .Where(il => il.LogDate == today)
             .ToListAsync();
 
         var activeSupplements = await DbContext.Supplements
@@ -190,6 +238,7 @@
                     SupplementId = supplement.Id,
                     Supplement = supplement,
                     IntakeTime = today,
+                    LogDate = today,
                     Taken = false
                 };
             })
@@ -236,14 +285,16 @@
 
         foreach (var date in pastWeek)
         {
+            var nextDay = date.AddDays(1);
+            
             // Count workouts for this day
             var workoutCount = await DbContext.Workouts
-                .CountAsync(w => w.Date.Date == date.Date);
+                .CountAsync(w => w.Date >= date && w.Date < nextDay);
             workoutData.Add(workoutCount);
 
             // Count supplements taken for this day
             var supplementCount = await DbContext.IntakeLogs
-                .CountAsync(il => il.IntakeTime.Date == date.Date && il.Taken);
+                .CountAsync(il => il.LogDate == date && il.Taken);
             supplementData.Add(supplementCount);
         }
 
@@ -254,5 +305,96 @@
         };
 
         _weeklyLabels = pastWeek.Select(d => d.ToString("ddd")).ToArray();
+    }
+
+    private async Task LogMetrics()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(LogMetricsDialog.InitialEnergy), _todayMetrics?.EnergyLevel ?? 5 },
+            { nameof(LogMetricsDialog.InitialSleep), _todayMetrics?.SleepQuality ?? 5 }
+        };
+
+        var dialog = await DialogService.ShowAsync<LogMetricsDialog>("Log Health Metrics", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is not null)
+        {
+            // Use reflection or dynamic to get data from anonymous type if needed, 
+            // but since we know the structure:
+            dynamic data = result.Data;
+            int energy = data.Energy;
+            int sleep = data.Sleep;
+
+            if (_todayMetrics == null)
+            {
+                _todayMetrics = new HealthMetric
+                {
+                    Date = DateTime.Now,
+                    EnergyLevel = energy,
+                    SleepQuality = sleep,
+                    Weight = await DbContext.UserProfiles.Select(p => p.Weight).FirstOrDefaultAsync(),
+                    WeightUnit = await DbContext.UserProfiles.Select(p => p.WeightUnit).FirstOrDefaultAsync() ?? "lbs"
+                };
+                DbContext.HealthMetrics.Add(_todayMetrics);
+            }
+            else
+            {
+                _todayMetrics.EnergyLevel = energy;
+                _todayMetrics.SleepQuality = sleep;
+                DbContext.HealthMetrics.Update(_todayMetrics);
+            }
+
+            await DbContext.SaveChangesAsync();
+            await LoadDashboardDataAsync(); // Refresh charts
+        }
+    }
+
+    private async Task ToggleSupplement(IntakeLog log)
+    {
+        try
+        {
+            if (log.Id == 0)
+            {
+                // Create new log object
+                var newLog = new IntakeLog
+                {
+                    SupplementId = log.SupplementId,
+                    Taken = true,
+                    IntakeTime = DateTime.Now,
+                    LogDate = DateTime.Today
+                };
+                DbContext.IntakeLogs.Add(newLog);
+            }
+            else
+            {
+                // Update existing log
+                // Explicitly fetch the entity to ensure we are modifying the tracked record
+                var existingLog = await DbContext.IntakeLogs.FindAsync(log.Id);
+                if (existingLog != null)
+                {
+                    existingLog.Taken = !existingLog.Taken; // Flip the status of the DB record
+                    existingLog.IntakeTime = DateTime.Now;
+                    existingLog.LogDate = DateTime.Today;
+                    DbContext.IntakeLogs.Update(existingLog);
+                }
+                else 
+                {
+                    // Fallback (rare race condition or untracked): use the passed log
+                    log.Taken = !log.Taken;
+                    log.IntakeTime = DateTime.Now;
+                    log.LogDate = DateTime.Today;
+                    DbContext.IntakeLogs.Update(log);
+                }
+            }
+
+            await DbContext.SaveChangesAsync();
+            await LoadDashboardDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving supplement: {ex.Message}", Severity.Error);
+            Console.WriteLine(ex);
+        }
     }
 }
